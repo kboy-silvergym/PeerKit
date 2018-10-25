@@ -38,7 +38,7 @@ class Advertiser: NSObject, MCNearbyServiceAdvertiserDelegate {
 //    }
 
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        let accept = mcSession.myPeerID.hashValue > peerID.hashValue
+        let accept = mcSession.myPeerID.displayName.hashValue != peerID.displayName.hashValue
         invitationHandler(accept, mcSession)
         if accept {
             stopAdvertising()
