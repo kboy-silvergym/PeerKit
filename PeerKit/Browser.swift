@@ -9,8 +9,6 @@
 import Foundation
 import MultipeerConnectivity
 
-let timeStarted = NSDate()
-
 class Browser: NSObject, MCNearbyServiceBrowserDelegate {
 
     let mcSession: MCSession

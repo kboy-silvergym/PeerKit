@@ -12,7 +12,6 @@ import MultipeerConnectivity
 class Advertiser: NSObject, MCNearbyServiceAdvertiserDelegate {
 
     let mcSession: MCSession
-
     init(mcSession: MCSession) {
         self.mcSession = mcSession
         super.init()
@@ -31,17 +30,14 @@ class Advertiser: NSObject, MCNearbyServiceAdvertiserDelegate {
         advertiser?.stopAdvertisingPeer()
     }
 
-
-//    @available(iOSApplicationExtension 7.0, *)
-//    public func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-//        <#code#>
-//    }
-
+    func restartAdvertising() {
+        advertiser?.startAdvertisingPeer()
+        advertiser?.delegate = self
+    }
+    
     func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
-        let accept = mcSession.myPeerID != peerID
-        invitationHandler(accept, mcSession)
-        if accept {
-            stopAdvertising()
-        }
+        //https://developer.apple.com/library/content/qa/qa1869/_index.html
+        //iOS8+, just accept
+        invitationHandler(true, mcSession)
     }
 }

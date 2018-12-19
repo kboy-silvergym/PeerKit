@@ -21,10 +21,9 @@ public class Transceiver: SessionDelegate {
     let browser: Browser
 
     public init(displayName: String!) {
-        session = Session(displayName: displayName, delegate: nil)
+        session = Session(displayName: displayName)
         advertiser = Advertiser(mcSession: session.mcSession)
         browser = Browser(mcSession: session.mcSession)
-        session.delegate = self
     }
 
     func startTransceiving(serviceType: String, discoveryInfo: [String: String]? = nil) {
@@ -34,7 +33,6 @@ public class Transceiver: SessionDelegate {
     }
 
     func stopTransceiving() {
-        session.delegate = nil
         advertiser.stopAdvertising()
         browser.stopBrowsing()
         session.disconnect()
@@ -62,7 +60,7 @@ public class Transceiver: SessionDelegate {
         didDisconnect(myPeerID: myPeerID, peer: peer)
     }
 
-    public func receivedData(myPeerID: MCPeerID, data: Data, fromPeer peer: MCPeerID) {
+    public func receivedData(_ data: Data, fromPeer peer: MCPeerID) {
         didReceiveData(data, fromPeer: peer)
     }
 

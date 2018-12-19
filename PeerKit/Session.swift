@@ -13,44 +13,54 @@ public protocol SessionDelegate {
     func connecting(myPeerID: MCPeerID, toPeer peer: MCPeerID)
     func connected(myPeerID: MCPeerID, toPeer peer: MCPeerID)
     func disconnected(myPeerID: MCPeerID, fromPeer peer: MCPeerID)
-    func receivedData(myPeerID: MCPeerID, data: Data, fromPeer peer: MCPeerID)
+    func receivedData(_ data: Data, fromPeer peer: MCPeerID)
     func finishReceivingResource(myPeerID: MCPeerID, resourceName: String, fromPeer peer: MCPeerID, atURL localURL: URL?)
 }
 
 public class Session: NSObject, MCSessionDelegate {
     public private(set) var myPeerID: MCPeerID
-    var delegate: SessionDelegate?
     public private(set) var mcSession: MCSession
+    public private(set) var state: MCSessionState = .notConnected
 
-    public init(displayName: String, delegate: SessionDelegate? = nil) {
+    public init(displayName: String) {
         myPeerID = MCPeerID(displayName: displayName)
-        self.delegate = delegate
         mcSession = MCSession(peer: myPeerID, securityIdentity: nil, encryptionPreference: .none)
         super.init()
         mcSession.delegate = self
     }
 
     public func disconnect() {
-        self.delegate = nil
         mcSession.delegate = nil
         mcSession.disconnect()
     }
 
     // MARK: MCSessionDelegate
+    // http://stackoverflow.com/questions/18935288/why-does-my-mcsession-peer-disconnect-randomly, needs to check peerID
 
     public func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         switch state {
             case .connecting:
-                delegate?.connecting(myPeerID: myPeerID, toPeer: peerID)
+                transceiver.connecting(myPeerID: myPeerID, toPeer: peerID)
+                self.state = .connecting
             case .connected:
-                delegate?.connected(myPeerID: myPeerID, toPeer: peerID)
+                transceiver.connected(myPeerID: myPeerID, toPeer: peerID)
+                if self.state != .connected {
+                    //called n times when MCSession has n connected peers
+                    transceiver.advertiser.stopAdvertising();
+                }
+                self.state = .connected
             case .notConnected:
-                delegate?.disconnected(myPeerID: myPeerID, fromPeer: peerID)
+                transceiver.disconnected(myPeerID: myPeerID, fromPeer: peerID)
+                // MEMO: stateに齟齬が会った時はリスタートする
+                if self.state == .connected {
+                    transceiver.advertiser.restartAdvertising()
+                }
+                self.state = .notConnected
         }
     }
 
     public func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        delegate?.receivedData(myPeerID: myPeerID, data: data, fromPeer: peerID)
+        transceiver.receivedData(data, fromPeer: peerID)
     }
 
     public func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
@@ -63,7 +73,7 @@ public class Session: NSObject, MCSessionDelegate {
 
     public func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {
         if (error == nil) {
-            delegate?.finishReceivingResource(myPeerID: myPeerID, resourceName: resourceName, fromPeer: peerID, atURL: localURL)
+            transceiver.finishReceivingResource(myPeerID: myPeerID, resourceName: resourceName, fromPeer: peerID, atURL: localURL)
         }
     }
     
